@@ -1,20 +1,21 @@
 from pydantic import BaseModel, Field, SecretStr, field_validator
-import ipaddress
+from ipaddress import IPv4Address
 from typing import List
 
+
 class DeviceModel(BaseModel):
-    hostname: str = Field(..., min_length=1)
-    ip_address: str
+    hostname: str
+    ip_address: IPv4Address
+    device_type: str = Field(default="cisco_ios")
     username: str
     password: SecretStr
-    device_type: str = Field(default="cisco_ios")
-    vlans: List[int]
-    total_ports: int = Field(..., gt=0)
+    vlans: List[int] = Field(default_factory=list)
+    total_ports: int = Field(default=24, gt=0)
 
-    @field_validator('ip_address')
-    def validate_ip(cls, v):
-        try:
-            ipaddress.ip_address(v)
-            return v
-        except ValueError:
-            raise ValueError(f"Geçersiz IP adresi: {v}")
+    @field_validator("vlans")
+    @classmethod
+    def validate_vlans(cls, v):
+        for vlan_id in v:
+            if not (1 <= vlan_id <= 4094):
+                raise ValueError(f"Geçersiz VLAN ID: {vlan_id} (1-4094 aralığında olmalı)")
+        return v
