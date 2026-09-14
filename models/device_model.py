@@ -7,6 +7,7 @@ class DeviceModel(BaseModel):
     ip_address: str
     username: str
     password: SecretStr
+    device_type: str = Field(default="cisco_ios")
     vlans: List[int]
     total_ports: int = Field(..., gt=0)
 

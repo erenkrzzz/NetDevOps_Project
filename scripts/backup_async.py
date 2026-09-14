@@ -10,7 +10,6 @@ sys.path.append(BASE_DIR)
 from utils.common import BACKUP_DIR, load_inventory
 from models.device_model import DeviceModel
 
-# Netmiko bağımlılığı kontrolü
 try:
     from netmiko import ConnectHandler, NetmikoTimeoutException, NetmikoAuthenticationException
     NETMIKO_AVAILABLE = True
@@ -35,14 +34,13 @@ def backup_single_device(dev_data: dict) -> bool:
 
     now = datetime.now()
     date_str = now.strftime("%Y-%m-%d_%H-%M-%S")
-    # IP adresi dosya adına eklenerek çakışma engellendi
     backup_filename = os.path.join(BACKUP_DIR, f"{device.hostname}_{device.ip_address}_{date_str}.cfg")
 
     print(f"[THREAD START] {device.hostname} ({device.ip_address}) yedekleniyor...")
 
     if not USE_MOCK and NETMIKO_AVAILABLE:
         cisco_device = {
-            'device_type': 'cisco_ios',
+            'device_type': device.device_type,
             'host': device.ip_address,
             'username': device.username,
             'password': device.password.get_secret_value(),
@@ -51,6 +49,14 @@ def backup_single_device(dev_data: dict) -> bool:
         try:
             with ConnectHandler(**cisco_device) as net_connect:
                 running_config = net_connect.send_command("show running-config")
+                
+                # Çıktı Doğrulama (Empty Output Validation)
+                if not running_config or "Invalid input" in running_config:
+                    err_msg = f"Geçersiz Çıktı Hatası: {device.hostname} konfigürasyon boş veya hatalı döndü."
+                    print(f"[ERROR] {err_msg}")
+                    logging.error(err_msg)
+                    return False
+
         except NetmikoTimeoutException:
             err_msg = f"Zaman Aşımı (Timeout): {device.hostname} ({device.ip_address}) erişilemiyor."
             print(f"[ERROR] {err_msg}")
@@ -67,8 +73,8 @@ def backup_single_device(dev_data: dict) -> bool:
             logging.error(err_msg)
             return False
     else:
-        # Simülasyon / Mock Modu
-        running_config = f"!\n! Mock Backup taken at {now} for {device.hostname}\nhostname {device.hostname}\n!\n"
+        # Mock Modu: Dosya başına açıkça MOCK DATA uyarısı ekleme
+        running_config = f"!\n! [WARNING: MOCK DATA - NOT A REAL BACKUP]\n! Backup taken at {now} for {device.hostname}\nhostname {device.hostname}\n!\n"
 
     try:
         with open(backup_filename, 'w', encoding='utf-8') as backup_file:
