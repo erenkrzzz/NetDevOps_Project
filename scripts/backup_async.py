@@ -3,27 +3,24 @@ import os
 import logging
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
-from dotenv import load_dotenv
-import yaml
 
-# Proje kök dizinini sisteme ekle
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(BASE_DIR)
+
+from utils.common import BACKUP_DIR, load_inventory
 from models.device_model import DeviceModel
 
-load_dotenv()
+# Netmiko bağımlılığı kontrolü
+try:
+    from netmiko import ConnectHandler, NetmikoTimeoutException, NetmikoAuthenticationException
+    NETMIKO_AVAILABLE = True
+except ImportError:
+    NETMIKO_AVAILABLE = False
 
-# Klasörlerin varlığından emin ol
-os.makedirs('backups', exist_ok=True)
-os.makedirs('logs', exist_ok=True)
-
-logging.basicConfig(
-    filename='logs/app.log',
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - [%(threadName)s] - %(message)s'
-)
+USE_MOCK = os.getenv("USE_MOCK", "True").lower() == "true"
+MAX_WORKERS = int(os.getenv("MAX_WORKERS", 5))
 
 def backup_single_device(dev_data: dict) -> bool:
-    """Tek bir cihazın yedeğini alan thread fonksiyonu"""
     dev_dict = dev_data.copy()
     dev_dict['username'] = os.getenv('DEVICE_USERNAME')
     dev_dict['password'] = os.getenv('DEVICE_PASSWORD')
@@ -31,25 +28,51 @@ def backup_single_device(dev_data: dict) -> bool:
     try:
         device = DeviceModel(**dev_dict)
     except Exception as e:
-        err_msg = f"Model Doğrulama Hatası: {dev_data.get('hostname', 'Bilinmeyen')} - {e}"
+        err_msg = f"Model Doğrulama Hatası ({dev_data.get('hostname', 'Bilinmeyen')}): Bilgiler geçersiz."
         print(f"[ERROR] {err_msg}")
         logging.error(err_msg)
         return False
 
     now = datetime.now()
     date_str = now.strftime("%Y-%m-%d_%H-%M-%S")
-    backup_filename = f"backups/{device.hostname}_{date_str}.cfg"
+    # IP adresi dosya adına eklenerek çakışma engellendi
+    backup_filename = os.path.join(BACKUP_DIR, f"{device.hostname}_{device.ip_address}_{date_str}.cfg")
 
-    print(f"[THREAD START] {device.hostname} ({device.ip_address}) işleniyor...")
+    print(f"[THREAD START] {device.hostname} ({device.ip_address}) yedekleniyor...")
 
-    mock_running_config = f"""!
-! Backup taken at {now} for {device.hostname}
-hostname {device.hostname}
-!
-"""
+    if not USE_MOCK and NETMIKO_AVAILABLE:
+        cisco_device = {
+            'device_type': 'cisco_ios',
+            'host': device.ip_address,
+            'username': device.username,
+            'password': device.password.get_secret_value(),
+            'timeout': 10
+        }
+        try:
+            with ConnectHandler(**cisco_device) as net_connect:
+                running_config = net_connect.send_command("show running-config")
+        except NetmikoTimeoutException:
+            err_msg = f"Zaman Aşımı (Timeout): {device.hostname} ({device.ip_address}) erişilemiyor."
+            print(f"[ERROR] {err_msg}")
+            logging.error(err_msg)
+            return False
+        except NetmikoAuthenticationException:
+            err_msg = f"Kimlik Doğrulama Hatası (Auth Error): {device.hostname} kullanıcı adı/şifre hatalı."
+            print(f"[ERROR] {err_msg}")
+            logging.error(err_msg)
+            return False
+        except Exception as e:
+            err_msg = f"SSH Bağlantı Hatası: {device.hostname} - {type(e).__name__}"
+            print(f"[ERROR] {err_msg}")
+            logging.error(err_msg)
+            return False
+    else:
+        # Simülasyon / Mock Modu
+        running_config = f"!\n! Mock Backup taken at {now} for {device.hostname}\nhostname {device.hostname}\n!\n"
+
     try:
         with open(backup_filename, 'w', encoding='utf-8') as backup_file:
-            backup_file.write(mock_running_config)
+            backup_file.write(running_config)
 
         log_msg = f"PARALEL YEDEK BAŞARILI: {device.hostname} -> {backup_filename}"
         print(f"[SUCCESS] {log_msg}")
@@ -57,26 +80,21 @@ hostname {device.hostname}
         return True
 
     except Exception as e:
-        err_msg = f"Yedekleme Başarısız: {device.hostname} - {e}"
+        err_msg = f"Dosya Yazma Hatası: {device.hostname} - {type(e).__name__}"
         print(f"[ERROR] {err_msg}")
-        logging.error(err_msg, exc_info=True)
+        logging.error(err_msg)
         return False
 
 if __name__ == "__main__":
-    inventory_path = 'inventory/devices.yaml'
+    raw_devices = load_inventory()
+    print(f"=== {len(raw_devices)} Cihaz İçin Paralel Yedekleme Başlatılıyor (Mock={USE_MOCK}) ===")
     
-    if not os.path.exists(inventory_path):
-        print(f"[CRITICAL] Envanter dosyası bulunamadı: {inventory_path}")
-        sys.exit(1)
-
-    with open(inventory_path, 'r', encoding='utf-8') as file:
-        raw_devices = yaml.safe_load(file) or []
-
-    print(f"=== {len(raw_devices)} Cihaz İçin Paralel Yedekleme Başlatılıyor ===")
-    
-    with ThreadPoolExecutor(max_workers=5) as executor:
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         results = list(executor.map(backup_single_device, raw_devices))
 
     successful = results.count(True)
     failed = results.count(False)
     print(f"=== İşlem Tamamlandı | Başarılı: {successful} | Hatalı: {failed} ===")
+    
+    if failed > 0:
+        sys.exit(1)
