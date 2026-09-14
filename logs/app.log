@@ -1,0 +1,5 @@
+2026-09-15 02:11:58,223 - INFO - Core-Router-01 (192.168.1.1) için 10 adet komut baþarýyla üretildi.
+2026-09-15 02:21:21,939 - INFO - YEDEK BAÞARILI: Core-Router-01 konfigürasyonu 'backups/Core-Router-01_2026-09-15_02-21.cfg' dosyasýna kaydedildi.
+2026-09-15 02:22:30,188 - INFO - PARALEL YEDEK BAÞARILI: Core-Router-01 -> backups/Core-Router-01_2026-09-15_02-22-30.cfg
+2026-09-15 02:22:30,188 - INFO - PARALEL YEDEK BAÞARILI: Access-Switch-01 -> backups/Access-Switch-01_2026-09-15_02-22-30.cfg
+2026-09-15 02:22:30,189 - INFO - PARALEL YEDEK BAÞARILI: Access-Switch-02 -> backups/Access-Switch-02_2026-09-15_02-22-30.cfg

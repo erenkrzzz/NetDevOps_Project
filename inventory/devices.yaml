@@ -1,0 +1,20 @@
+- hostname: "Core-Router-01"
+  ip_address: "192.168.1.1"
+  device_type: "cisco_ios"
+  total_ports: 24
+  is_active: true
+  vlans: [10, 20, 30, 99]
+
+- hostname: "Access-Switch-01"
+  ip_address: "192.168.1.10"
+  device_type: "cisco_ios"
+  total_ports: 48
+  is_active: true
+  vlans: [10, 20]
+
+- hostname: "Access-Switch-02"
+  ip_address: "192.168.1.11"
+  device_type: "cisco_ios"
+  total_ports: 48
+  is_active: true
+  vlans: [30, 99]

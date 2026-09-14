@@ -1,0 +1,12 @@
+! --- {{ hostname }} VLAN CONFIGURATION ---
+vlan database
+{% for vlan_id in vlans %}
+vlan {{ vlan_id }} name VLAN_{{ vlan_id }}
+{% endfor %}
+exit
+
+interface range GigabitEthernet0/1 - {{ total_ports }}
+ switchport mode access
+ switchport access vlan {{ vlans[0] }}
+ no shutdown
+!
