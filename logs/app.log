@@ -18,3 +18,9 @@
 2026-09-15 02:54:50,638 - INFO - [ThreadPoolExecutor-0_0] - PARALEL YEDEK BAÞARILI: Core-Router-01 -> C:\Users\erenr\Desktop\NetDevOps_Project\backups\Core-Router-01_192.168.1.1_2026-09-15_02-54-50.cfg
 2026-09-15 02:54:50,638 - INFO - [ThreadPoolExecutor-0_1] - PARALEL YEDEK BAÞARILI: Access-Switch-01 -> C:\Users\erenr\Desktop\NetDevOps_Project\backups\Access-Switch-01_192.168.1.10_2026-09-15_02-54-50.cfg
 2026-09-15 02:54:50,638 - INFO - [ThreadPoolExecutor-0_2] - PARALEL YEDEK BAÞARILI: Access-Switch-02 -> C:\Users\erenr\Desktop\NetDevOps_Project\backups\Access-Switch-02_192.168.1.11_2026-09-15_02-54-50.cfg
+2026-09-15 03:03:31,830 - INFO - [ThreadPoolExecutor-0_0] - [MOCK] YEDEK BAÞARILI: Core-Router-01 -> C:\Users\erenr\Desktop\NetDevOps_Project\backups\Core-Router-01_192.168.1.1_2026-09-15_03-03-31.cfg
+2026-09-15 03:03:31,830 - INFO - [ThreadPoolExecutor-0_1] - [MOCK] YEDEK BAÞARILI: Access-Switch-01 -> C:\Users\erenr\Desktop\NetDevOps_Project\backups\Access-Switch-01_192.168.1.10_2026-09-15_03-03-31.cfg
+2026-09-15 03:03:31,830 - INFO - [ThreadPoolExecutor-0_2] - [MOCK] YEDEK BAÞARILI: Access-Switch-02 -> C:\Users\erenr\Desktop\NetDevOps_Project\backups\Access-Switch-02_192.168.1.11_2026-09-15_03-03-31.cfg
+2026-09-15 03:03:49,036 - INFO - [MainThread] - [MOCK] DEPLOY HAZIR: Core-Router-01 (192.168.1.1) -> 10 komut üretildi.
+2026-09-15 03:03:49,037 - INFO - [MainThread] - [MOCK] DEPLOY HAZIR: Access-Switch-01 (192.168.1.10) -> 8 komut üretildi.
+2026-09-15 03:03:49,039 - INFO - [MainThread] - [MOCK] DEPLOY HAZIR: Access-Switch-02 (192.168.1.11) -> 8 komut üretildi.
